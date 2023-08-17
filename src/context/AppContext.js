@@ -1,60 +1,39 @@
 import React, { createContext, useReducer, useMemo } from 'react';
 
 export const AppReducer = (state, action) => {
-    let budget = 0;
+
     switch (action.type) {
         case 'ADD_EXPENSE':
-            let total_budget = 0;
-            total_budget = state.expenses.reduce(
-                (previousExp, currentExp) => {
-                    return previousExp + currentExp.cost
-                },0
+            const updatedExpensesAdd = state.expenses.map(expense =>
+                expense.name === action.payload.name
+                    ? { ...expense, cost: expense.cost + action.payload.cost }
+                    : expense
             );
-            total_budget += action.payload.cost;
-            action.type = "DONE";
-            if(total_budget <= state.budget) {
-                total_budget = 0;
-                state.expenses.map((currentExp)=> {
-                    if(currentExp.name === action.payload.name) {
-                        currentExp.cost = action.payload.cost + currentExp.cost;
-                    }
-                    return currentExp
-                });
-                return {
-                    ...state,
-                };
-            } else {
-                alert("Cannot increase the allocation! Out of funds");
-                return {
-                    ...state
-                }
-            }
-            case 'RED_EXPENSE':
-                const red_expenses = state.expenses.map((currentExp)=> {
-                    if (currentExp.name === action.payload.name && currentExp.cost - action.payload.cost >= 0) {
-                        currentExp.cost -= action.payload.cost;
-                        budget = state.budget + action.payload.cost
-                    }
-                    return currentExp
-                })
-                action.type = "DONE";
-                return {
-                    ...state,
-                    expenses: [...red_expenses],
-                };
-            case 'DELETE_EXPENSE':
-            action.type = "DONE";
-            state.expenses.map((currentExp)=> {
-                if (currentExp.name === action.payload) {
-                    budget = state.budget + currentExp.cost
-                    currentExp.cost =  0;
-                }
-                return currentExp
-            })
-            action.type = "DONE";
             return {
                 ...state,
-                budget
+                expenses: updatedExpensesAdd
+            };
+
+        case 'RED_EXPENSE':
+            const updatedExpensesRed = state.expenses.map(expense =>
+                expense.name === action.payload.name && expense.cost >= action.payload.cost
+                    ? { ...expense, cost: expense.cost - action.payload.cost }
+                    : expense
+            );
+            return {
+                ...state,
+                expenses: updatedExpensesRed
+            };
+
+        case 'DELETE_EXPENSE':
+            const updatedExpensesDelete = state.expenses.map(expense =>
+                expense.name === action.payload
+                    ? { ...expense, cost: 0 }  // set cost to 0 instead of deleting
+                    : expense
+            );
+            return {
+                ...state,
+                expenses: updatedExpensesDelete
             };
         case 'SET_BUDGET':
             action.type = "DONE";
@@ -85,10 +64,11 @@ const initialState = {
         { id: "Human Resource", name: 'Human Resource', cost: 40 },
         { id: "IT", name: 'IT', cost: 500 },
     ],
-    currency: '£'
+    currency: '$'
 };
 
 export const AppContext = createContext();
+
 export const AppProvider = (props) => {
     const [state, dispatch] = useReducer(AppReducer, initialState);
 
